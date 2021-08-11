@@ -1,0 +1,76 @@
+# Create Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: boot
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bootserviceaccount
+  namespace: boot
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: bootservicerole
+  namespace: boot
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: bootservicerolebinding
+  namespace: boot
+subjects:
+  - kind: ServiceAccount
+    name: bootserviceaccount
+    namespace: boot
+roleRef:
+  kind: Role
+  name: bootservicerole
+  apiGroup: rbac.authorization.k8s.io
+---
+# Create SpringBoot Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: springbootmaven
+  name: springbootmaven
+  namespace: boot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: springbootmaven
+  template:
+    metadata:
+      labels:
+        app: springbootmaven
+    spec:
+      containers:
+      - image: salecharohit/springbootmaven
+        name: springbootmaven
+        ports:
+        - containerPort: 8080
+      serviceAccountName: bootserviceaccount
+---
+# Create Service for SpringBoot Deployment
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: springbootmaven
+  name: springbootmaven
+  namespace: boot
+spec:
+  ports:
+  - name: "http"
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: springbootmaven
